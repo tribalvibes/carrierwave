@@ -79,6 +79,14 @@ describe CarrierWave::ActiveRecord do
         @event.image.current_path.should == public_path('uploads/test.jpeg')
       end
 
+      it "should return valid XML when to_xml is called on the object" do
+        @event.to_xml.should_not raise_error
+      end
+
+      it "should return valid JSON when as_json is called on the object" do
+        @event.as_json.should_not raise_error
+      end
+
     end
 
     describe '#image=' do
