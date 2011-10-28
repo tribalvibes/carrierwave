@@ -8,7 +8,7 @@ module CarrierWave
       include CarrierWave::Uploader::Callbacks
 
       included do
-        class_inheritable_accessor :versions, :instance_reader => false, :instance_writer => false
+        class_attribute :versions, :instance_writer => false
         self.versions = {}
 
         class_attribute :version_names, :instance_writer => false
