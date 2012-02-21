@@ -292,10 +292,10 @@ describe CarrierWave::Mount do
           @instance.image.current_path.should =~ /test.jpg$/
         end
 
-        it "should not write over a previously assigned file" do
+        it "should write over a previously assigned file" do
           @instance.image = stub_file('portrait.jpg')
           @instance.remote_image_url = 'http://www.example.com/test.jpg'
-          @instance.image.current_path.should =~ /portrait.jpg$/
+          @instance.image.current_path.should =~ /test.jpg$/
         end
       end
     end
@@ -405,7 +405,9 @@ describe CarrierWave::Mount do
           end
         end
         @instance.image = stub_file('test.jpg')
-        @instance.image_integrity_error.should be_an_instance_of(CarrierWave::IntegrityError)
+        e = @instance.image_integrity_error
+        e.should be_an_instance_of(CarrierWave::IntegrityError)
+        e.message.lines.grep(/^You are not allowed to upload/).should be_true
       end
     end
 

@@ -1,17 +1,17 @@
 # encoding: utf-8
 
-# not sure why we need to do this
-require 'sqlite3/sqlite3_native'
-require 'sqlite3'
+require 'mysql2'
 
 require 'active_record'
 require 'carrierwave/mount'
 require 'carrierwave/orm/activerecord'
 
-# change this if sqlite is unavailable
+# Change this if MySQL is unavailable
 dbconfig = {
-  :adapter => 'sqlite3',
-  :database => ':memory:'
+  :adapter  => 'mysql2',
+  :database => 'carrierwave_test',
+  :username => 'root',
+  :encoding => 'utf8'
 }
 
 ActiveRecord::Base.establish_connection(dbconfig)

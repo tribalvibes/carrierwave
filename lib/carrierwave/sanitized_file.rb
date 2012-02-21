@@ -16,10 +16,10 @@ module CarrierWave
   class SanitizedFile
 
     attr_accessor :file
-    
+
     class << self
       attr_writer :sanitize_regexp
-      
+
       def sanitize_regexp
         @sanitize_regexp ||= /[^a-zA-Z0-9\.\-\+_]/
       end
@@ -132,7 +132,7 @@ module CarrierWave
     # [Boolean] whether the file is valid and has a non-zero size
     #
     def empty?
-      @file.nil? || self.size.nil? || self.size.zero?
+      @file.nil? || self.size.nil? || (self.size.zero? && ! self.exists?)
     end
 
     ##
@@ -181,6 +181,7 @@ module CarrierWave
       end
       chmod!(new_path, permissions)
       self.file = new_path
+      self
     end
 
     ##
@@ -217,6 +218,18 @@ module CarrierWave
     end
 
     ##
+    # Returns a File object, or nil if it does not exist.
+    #
+    # === Returns
+    #
+    # [File] a File object representing the SanitizedFile
+    #
+    def to_file
+      return @file if @file.is_a?(File)
+      File.open(path) if exists?
+    end
+
+    ##
     # Returns the content type of the file.
     #
     # === Returns
@@ -225,7 +238,18 @@ module CarrierWave
     #
     def content_type
       return @content_type if @content_type
-      @file.content_type.chomp if @file.respond_to?(:content_type) and @file.content_type
+      @file.content_type.to_s.chomp if @file.respond_to?(:content_type) and @file.content_type
+    end
+
+    ##
+    # Sets the content type of the file.
+    #
+    # === Returns
+    #
+    # [String] the content type of the file
+    #
+    def content_type=(type)
+      @content_type = type
     end
 
     ##

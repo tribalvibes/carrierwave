@@ -21,6 +21,22 @@ describe CarrierWave::Uploader do
       @uploader_class.versions[:thumb][:uploader].ancestors.should include(@uploader_class)
     end
 
+    it "should only assign versions to parent" do
+      @uploader_class.version :large
+      @uploader_class.version :thumb do
+        version :mini do
+          version :micro
+        end
+      end
+      @uploader_class.versions.should have(2).versions
+      @uploader_class.versions.should include :large
+      @uploader_class.versions.should include :thumb
+      @uploader.large.versions.should be_empty
+      @uploader.thumb.versions.keys.should == [:mini]
+      @uploader.thumb.mini.versions.keys.should == [:micro]
+      @uploader.thumb.mini.micro.versions.should be_empty
+    end
+
     it "should add an accessor which returns the version" do
       @uploader_class.version :thumb
       @uploader.thumb.should be_a(@uploader_class)
@@ -131,7 +147,7 @@ describe CarrierWave::Uploader do
 
           def rotate
             manipulate! do |img|
-              img.rotate 90
+              img.rotate "90"
               img
             end
           end
@@ -262,7 +278,35 @@ describe CarrierWave::Uploader do
         @uploader.store!(@file)
         @uploader.thumb.should be_present
         @uploader.preview.should be_blank
-       end
+      end
+
+      it "should process conditional version if the condition block returns true" do
+        @uploader_class.version(:preview)[:options][:if] = lambda{|record, args| record.true?(args[:file])}
+        @uploader.should_receive(:true?).at_least(:once).and_return(true)
+        @uploader.store!(@file)
+        @uploader.thumb.should be_present
+        @uploader.preview.should be_present
+      end
+
+      it "should not process conditional versions if the condition block returns false" do
+        @uploader_class.version(:preview)[:options][:if] = lambda{|record, args| record.false?(args[:file])}
+        @uploader.should_receive(:false?).at_least(:once).and_return(false)
+        @uploader.store!(@file)
+        @uploader.thumb.should be_present
+        @uploader.preview.should be_blank
+      end
+
+      it "should not cache file twice when store! called with a file" do
+        @uploader_class.process :banana
+        @uploader.thumb.class.process :banana
+
+        @uploader.should_receive(:banana).at_least(:once).at_most(:once).and_return(true)
+        @uploader.thumb.should_receive(:banana).at_least(:once).at_most(:once).and_return(true)
+
+        @uploader.store!(@file)
+        @uploader.store_path.should == 'uploads/test.jpg'
+        @uploader.thumb.store_path.should == 'uploads/thumb_test.jpg'
+      end
     end
 
     describe '#recreate_versions!' do

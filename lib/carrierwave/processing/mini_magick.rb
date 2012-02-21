@@ -32,16 +32,15 @@ module CarrierWave
   #     class MyUploader < CarrierWave::Uploader::Base
   #       include CarrierWave::MiniMagick
   #
-  #       process :do_stuff => 10.0
+  #       process :radial_blur => 10
   #
-  #       def do_stuff(blur_factor)
+  #       def radial_blur(amount)
   #         manipulate! do |img|
-  #           img = img.sepiatone
-  #           img = img.auto_orient
-  #           img = img.radial_blur blur_factor
+  #           img.radial_blur(amount)
+  #           img = yield(img) if block_given?
+  #           img
   #         end
   #       end
-  #     end
   #
   # === Note
   #
@@ -71,8 +70,8 @@ module CarrierWave
         process :resize_to_fit => [width, height]
       end
 
-      def resize_to_fill(width, height)
-        process :resize_to_fill => [width, height]
+      def resize_to_fill(width, height, gravity='Center')
+        process :resize_to_fill => [width, height, gravity]
       end
 
       def resize_and_pad(width, height, background=:transparent, gravity=::Magick::CenterGravity)
@@ -159,6 +158,7 @@ module CarrierWave
     #
     # [width (Integer)] the width to scale the image to
     # [height (Integer)] the height to scale the image to
+    # [gravity (String)] the current gravity suggestion (default: 'Center'; options: 'NorthWest', 'North', 'NorthEast', 'West', 'Center', 'East', 'SouthWest', 'South', 'SouthEast')
     #
     # === Yields
     #
@@ -207,7 +207,7 @@ module CarrierWave
         img.combine_options do |cmd|
           cmd.thumbnail "#{width}x#{height}>"
           if background == :transparent
-            cmd.background "rgba(0, 0, 0, 0.0)"
+            cmd.background "rgba(255, 255, 255, 0.0)"
           else
             cmd.background background
           end
@@ -246,7 +246,7 @@ module CarrierWave
       image.write(current_path)
       ::MiniMagick::Image.open(current_path)
     rescue ::MiniMagick::Error, ::MiniMagick::Invalid => e
-      raise CarrierWave::ProcessingError.new("Failed to manipulate with MiniMagick, maybe it is not an image? Original Error: #{e}")
+      raise CarrierWave::ProcessingError, I18n.translate(:"errors.messages.mini_magick_processing_error", :e => e)
     end
 
   end # MiniMagick

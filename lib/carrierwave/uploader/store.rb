@@ -53,25 +53,33 @@ module CarrierWave
       # [new_file (File, IOString, Tempfile)] any kind of file object
       #
       def store!(new_file=nil)
-        cache!(new_file) if new_file
+        cache!(new_file) if new_file && ((@cache_id != parent_cache_id) || @cache_id.nil?)
         if @file and @cache_id
           with_callbacks(:store, new_file) do
             new_file = storage.store!(@file)
-            @file.delete if delete_tmp_file_after_storage
-            delete_cache_id if delete_cache_id_after_storage
+            @file.delete if (delete_tmp_file_after_storage && ! move_to_store)
+            delete_cache_id
             @file = new_file
             @cache_id = nil
           end
         end
       end
-      
+
       ##
       # Deletes a cache id (tmp dir in cache)
       #
       def delete_cache_id
         if @cache_id
-          path = File.join(cache_dir, @cache_id)
-          FileUtils.rm_rf(path) if File.exists?(path) && File.directory?(path)
+          path = File.expand_path(File.join(cache_dir, @cache_id), CarrierWave.root)
+          begin
+            Dir.rmdir(path)
+          rescue Errno::ENOENT
+            # Ignore: path does not exist
+          rescue Errno::ENOTDIR
+            # Ignore: path is not a dir
+          rescue Errno::ENOTEMPTY, Errno::EEXIST
+            # Ignore: dir is not empty
+          end
         end
       end
 

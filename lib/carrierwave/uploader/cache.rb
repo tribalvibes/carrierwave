@@ -90,6 +90,11 @@ module CarrierWave
       ##
       # Caches the given file. Calls process! to trigger any process callbacks.
       #
+      # By default, cache!() uses copy_to(), which operates by copying the file
+      # to the cache, then deleting the original file.  If move_to_cache() is
+      # overriden to return true, then cache!() uses move_to(), which simply
+      # moves the file to the cache.  Useful for large files.
+      #
       # === Parameters
       #
       # [new_file (File, IOString, Tempfile)] any kind of file object
@@ -110,7 +115,11 @@ module CarrierWave
             @filename = new_file.filename
             self.original_filename = new_file.filename
 
-            @file = new_file.copy_to(cache_path, permissions)
+            if move_to_cache
+              @file = new_file.move_to(cache_path, permissions)
+            else
+              @file = new_file.copy_to(cache_path, permissions)
+            end
           end
         end
       end
@@ -130,16 +139,7 @@ module CarrierWave
         with_callbacks(:retrieve_from_cache, cache_name) do
           self.cache_id, self.original_filename = cache_name.to_s.split('/', 2)
           @filename = original_filename
-
-          if File.exist?(cache_path) && defined?(MIME::Types)
-            @file = SanitizedFile.new(
-              :tempfile => cache_path,
-              :filename => @filename,
-              :content_type => MIME::Types.of(File.basename(cache_path))[0].content_type
-            )
-          else
-            @file = CarrierWave::SanitizedFile.new(cache_path)
-          end
+          @file = CarrierWave::SanitizedFile.new(cache_path)
         end
       end
 

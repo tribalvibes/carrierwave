@@ -250,9 +250,9 @@ module CarrierWave
       frames = if image.size > 1
         list = ::Magick::ImageList.new
         image.each do |frame|
-          list << yield( frame )
+          list << (block_given? ? yield( frame ) : frame)
         end
-        list
+        block_given? ? list : list.append(true)
       else
         frame = image.first
         frame = yield( frame ) if block_given?
@@ -266,7 +266,7 @@ module CarrierWave
       end
       destroy_image(frames)
     rescue ::Magick::ImageMagickError => e
-      raise CarrierWave::ProcessingError.new("Failed to manipulate with rmagick, maybe it is not an image? Original Error: #{e}")
+      raise CarrierWave::ProcessingError, I18n.translate(:"errors.messages.rmagick_processing_error", :e => e)
     end
 
   private

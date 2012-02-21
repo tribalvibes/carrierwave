@@ -3,30 +3,28 @@
 module CarrierWave
   module Uploader
     module Url
+      extend ActiveSupport::Concern
+      include CarrierWave::Uploader::Configuration
 
       ##
+      # === Parameters
+      #
+      # [Hash] optional, the query params (only AWS)
+      #
       # === Returns
       #
       # [String] the location where this file is accessible via a url
       #
-      def url
+      def url(options = {})
         if file.respond_to?(:url) and not file.url.blank?
-          file.url
+          file.method(:url).arity == 0 ? file.url : file.url(options)
         elsif current_path
-          File.expand_path(current_path).gsub(File.expand_path(root), '')
+          (base_path || "") + File.expand_path(current_path).gsub(File.expand_path(root), '')
         end
       end
 
-      alias_method :to_s, :url
-
-      ##
-      # === Returns
-      #
-      # [String] A JSON serialization containing this uploader's URL(s)
-      #
-      def as_json(options = nil)
-        h = { :url => url }
-        h.merge Hash[versions.map { |name, version| [name, { :url => version.url }] }]
+      def to_s
+        url || ''
       end
 
     end # Url
